@@ -450,7 +450,15 @@
                 <div id="products" class="tab-content p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-semibold text-neutral-900">Gestion des produits</h3>
-                        <span class="text-sm text-neutral-500"><?php echo count($products); ?> produit(s)</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="openAddCategoryModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors btn-admin">
+                                <i class="fas fa-folder-plus mr-2"></i>Nouvelle catégorie
+                            </button>
+                            <button onclick="openAddProductModal()" class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors btn-admin">
+                                <i class="fas fa-plus mr-2"></i>Nouveau produit
+                            </button>
+                            <span class="text-sm text-neutral-500"><?php echo count($products); ?> produit(s)</span>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -468,7 +476,7 @@
                             <h4 class="font-semibold text-neutral-900 mb-2"><?php echo htmlspecialchars($product['name']); ?></h4>
                             <p class="text-neutral-600 text-sm mb-3 line-clamp-2"><?php echo htmlspecialchars($product['description']); ?></p>
                             <div class="flex items-center justify-between mb-3">
-                                <span class="font-bold text-lg text-neutral-900"><?php echo number_format($product['price'], 2); ?>€</span>
+                                <span class="font-bold text-lg text-neutral-900"><?php echo number_format($product['price'], 2); ?> MAD</span>
                                 <span class="text-sm text-neutral-600">Stock: <?php echo $product['stock_quantity']; ?></span>
                             </div>
                             <div class="flex items-center justify-between">
@@ -476,10 +484,12 @@
                                     <?php echo htmlspecialchars($product['category_name'] ?? 'Sans catégorie'); ?>
                                 </span>
                                 <div class="flex space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-800 transition-colors duration-200" title="Modifier">
+                                    <button class="text-blue-600 hover:text-blue-800 transition-colors duration-200" 
+                                            onclick="openEditProductModal(<?php echo $product['id']; ?>)" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="text-red-600 hover:text-red-800 transition-colors duration-200" title="Supprimer">
+                                    <button class="text-red-600 hover:text-red-800 transition-colors duration-200" 
+                                            onclick="deleteProduct(<?php echo $product['id']; ?>)" title="Supprimer">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -493,6 +503,216 @@
     </main>
 
     <?php include __DIR__ . '/../../includes/footer.php'; ?>
+
+    <!-- Modal Add Product -->
+    <div id="addProductModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-neutral-900">Ajouter un nouveau produit</h3>
+                <button onclick="closeAddProductModal()" class="text-neutral-500 hover:text-neutral-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addProductForm" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="col-span-2">
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productName">
+                            Nom du produit*
+                        </label>
+                        <input type="text" id="productName" name="name" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productDescription">
+                            Description*
+                        </label>
+                        <textarea id="productDescription" name="description" rows="4" required
+                                  class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productPrice">
+                            Prix (MAD)*
+                        </label>
+                        <input type="number" id="productPrice" name="price" min="0" step="0.01" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productStock">
+                            Stock*
+                        </label>
+                        <input type="number" id="productStock" name="stock" min="0" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productCategory">
+                            Catégorie
+                        </label>
+                        <select id="productCategory" name="category_id" 
+                                class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">Sélectionner une catégorie</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="productImage">
+                            Image
+                        </label>
+                        <input type="file" id="productImage" name="image" accept="image/*"
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddProductModal()" 
+                            class="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+                        Ajouter le produit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Product -->
+    <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-neutral-900">Modifier le produit</h3>
+                <button onclick="closeEditProductModal()" class="text-neutral-500 hover:text-neutral-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editProductForm" enctype="multipart/form-data">
+                <input type="hidden" id="editProductId" name="product_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="col-span-2">
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductName">
+                            Nom du produit*
+                        </label>
+                        <input type="text" id="editProductName" name="name" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductDescription">
+                            Description*
+                        </label>
+                        <textarea id="editProductDescription" name="description" rows="4" required
+                                  class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductPrice">
+                            Prix (MAD)*
+                        </label>
+                        <input type="number" id="editProductPrice" name="price" min="0" step="0.01" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductStock">
+                            Stock*
+                        </label>
+                        <input type="number" id="editProductStock" name="stock" min="0" required
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductCategory">
+                            Catégorie
+                        </label>
+                        <select id="editProductCategory" name="category_id" 
+                                class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">Sélectionner une catégorie</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-neutral-700 text-sm font-medium mb-2" for="editProductImage">
+                            Nouvelle image (optionnel)
+                        </label>
+                        <input type="file" id="editProductImage" name="image" accept="image/*"
+                               class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+
+                    <div id="currentImageContainer" class="col-span-2">
+                        <p class="text-sm text-neutral-600 mb-2">Image actuelle:</p>
+                        <div id="currentImage" class="h-40 w-40 bg-neutral-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-image text-4xl text-neutral-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEditProductModal()" 
+                            class="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Add Category -->
+    <div id="addCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-neutral-900">Ajouter une nouvelle catégorie</h3>
+                <button onclick="closeAddCategoryModal()" class="text-neutral-500 hover:text-neutral-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addCategoryForm">
+                <div class="mb-4">
+                    <label class="block text-neutral-700 text-sm font-medium mb-2" for="categoryName">
+                        Nom de la catégorie*
+                    </label>
+                    <input type="text" id="categoryName" name="name" required
+                           class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-neutral-700 text-sm font-medium mb-2" for="categoryDescription">
+                        Description
+                    </label>
+                    <textarea id="categoryDescription" name="description" rows="3"
+                              class="w-full p-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddCategoryModal()" 
+                            class="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        Ajouter la catégorie
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
         // Tab functionality
@@ -596,6 +816,182 @@
                 }, 5000);
             }
         }
+
+        // Product management functions
+        function openAddProductModal() {
+            document.getElementById('addProductModal').classList.remove('hidden');
+        }
+        
+        function closeAddProductModal() {
+            document.getElementById('addProductModal').classList.add('hidden');
+            document.getElementById('addProductForm').reset();
+        }
+        
+        function openEditProductModal(productId) {
+            // Fetch product details
+            const formData = new FormData();
+            formData.append('product_id', productId);
+            
+            fetch('?route=productAjax', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const product = data.product;
+                    
+                    // Populate form fields
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('editProductName').value = product.name;
+                    document.getElementById('editProductDescription').value = product.description;
+                    document.getElementById('editProductPrice').value = product.price;
+                    document.getElementById('editProductStock').value = product.stock_quantity;
+                    
+                    // Set category
+                    const categorySelect = document.getElementById('editProductCategory');
+                    if (product.category_id) {
+                        categorySelect.value = product.category_id;
+                    } else {
+                        categorySelect.value = '';
+                    }
+                    
+                    // Display current image if exists
+                    const currentImage = document.getElementById('currentImage');
+                    if (product.image_url) {
+                        currentImage.innerHTML = `<img src="${product.image_url}" alt="${product.name}" class="h-full w-full object-cover rounded-lg">`;
+                    } else {
+                        currentImage.innerHTML = `<i class="fas fa-image text-4xl text-neutral-400"></i>`;
+                    }
+                    
+                    // Show modal
+                    document.getElementById('editProductModal').classList.remove('hidden');
+                } else {
+                    showMessage(data.message || 'Erreur lors de la récupération des détails du produit.', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Erreur lors de la récupération des détails du produit.', 'error');
+            });
+        }
+        
+        function closeEditProductModal() {
+            document.getElementById('editProductModal').classList.add('hidden');
+            document.getElementById('editProductForm').reset();
+        }
+        
+        function deleteProduct(productId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                
+                fetch('?route=admin-delete-product', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showMessage(data.message, data.success ? 'success' : 'error');
+                    if (data.success) {
+                        // Reload the products section
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    showMessage('Erreur lors de la suppression du produit.', 'error');
+                });
+            }
+        }
+        
+        function openAddCategoryModal() {
+            document.getElementById('addCategoryModal').classList.remove('hidden');
+        }
+        
+        function closeAddCategoryModal() {
+            document.getElementById('addCategoryModal').classList.add('hidden');
+            document.getElementById('addCategoryForm').reset();
+        }
+        
+        // Form submissions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Product Form
+            const addProductForm = document.getElementById('addProductForm');
+            if (addProductForm) {
+                addProductForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(addProductForm);
+                    
+                    fetch('?route=admin-add-product', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showMessage(data.message, data.success ? 'success' : 'error');
+                        if (data.success) {
+                            closeAddProductModal();
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('Erreur lors de l\'ajout du produit.', 'error');
+                    });
+                });
+            }
+            
+            // Edit Product Form
+            const editProductForm = document.getElementById('editProductForm');
+            if (editProductForm) {
+                editProductForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(editProductForm);
+                    
+                    fetch('?route=admin-edit-product', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showMessage(data.message, data.success ? 'success' : 'error');
+                        if (data.success) {
+                            closeEditProductModal();
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('Erreur lors de la mise à jour du produit.', 'error');
+                    });
+                });
+            }
+            
+            // Add Category Form
+            const addCategoryForm = document.getElementById('addCategoryForm');
+            if (addCategoryForm) {
+                addCategoryForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(addCategoryForm);
+                    
+                    fetch('?route=admin-add-category', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showMessage(data.message, data.success ? 'success' : 'error');
+                        if (data.success) {
+                            closeAddCategoryModal();
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('Erreur lors de l\'ajout de la catégorie.', 'error');
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html> 

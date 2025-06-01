@@ -48,6 +48,10 @@ function defineRoutes()
         'admin-update-order' => 'updateOrderStatus', // Mettre à jour statut commande (POST)
         'admin-delete-user' => 'deleteUser',         // Supprimer un utilisateur (POST)
         'admin-update-role' => 'updateUserRole',     // Mettre à jour rôle utilisateur (POST)
+        'admin-add-product' => 'addProduct',         // Ajouter un produit (POST)
+        'admin-edit-product' => 'editProduct',       // Modifier un produit (POST)
+        'admin-delete-product' => 'deleteProduct',   // Supprimer un produit (POST)
+        'admin-add-category' => 'addCategory',       // Ajouter une catégorie (POST)
         'productAjax' => 'handleProductAjaxRequest'   // Requêtes AJAX pour les produits
     ];
 

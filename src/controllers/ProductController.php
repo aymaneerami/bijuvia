@@ -15,6 +15,26 @@ function handleProductAjaxRequest()
         global $pdo; // Connexion PDO
         $data = json_decode(file_get_contents("php://input"), true);
 
+        // Si les données sont envoyées via FormData (POST)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['product_id'])) {
+            // Récupérer un produit spécifique pour l'édition
+            $productId = $_POST['product_id'];
+            $stmt = $pdo->prepare("SELECT p.*, c.name as category_name 
+                                  FROM products p 
+                                  LEFT JOIN categories c ON p.category_id = c.id 
+                                  WHERE p.id = ?");
+            $stmt->execute([$productId]);
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($product) {
+                echo json_encode(['success' => true, 'product' => $product]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Produit introuvable']);
+            }
+            return;
+        }
+
+        // Sinon, recherche et filtrage de produits
         $query = $data['query'] ?? '';
         $category = $data['category'] ?? '';
         $priceOrder = $data['priceOrder'] ?? '';
@@ -42,9 +62,9 @@ function handleProductAjaxRequest()
         $stmt->execute($params);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        echo json_encode(['products' => $products]);
+        echo json_encode(['success' => true, 'products' => $products]);
     } catch (Exception $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
 

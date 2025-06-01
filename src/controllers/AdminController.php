@@ -467,4 +467,278 @@ function updateUserRole()
     }
 }
 
+function addProduct()
+{
+    // Vérifier si l'utilisateur est connecté et admin
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Non autorisé']);
+        exit;
+    }
+    
+    require '../src/config/database.php';
+    
+    try {
+        // Vérifier si l'utilisateur est admin
+        $stmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        
+        if (!$user || $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Accès refusé']);
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Récupérer les données du formulaire
+            $name = $_POST['name'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $price = $_POST['price'] ?? 0;
+            $stock = $_POST['stock'] ?? 0;
+            $category_id = $_POST['category_id'] ?? null;
+            
+            // Validation simple
+            if (empty($name) || empty($description) || $price <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Veuillez remplir tous les champs obligatoires']);
+                exit;
+            }
+            
+            // Traitement de l'image si présente
+            $image_url = '';
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = '../public/assets/images/';
+                
+                // Créer le répertoire s'il n'existe pas
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                // Préserver le nom original avec les accents
+                $original_name = basename($_FILES['image']['name']);
+                // Ajouter un préfixe timestamp pour éviter les conflits
+                $file_name = time() . '_' . $original_name;
+                $target_file = $upload_dir . $file_name;
+                
+                // Déplacer le fichier téléchargé
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                    $image_url = '../public/assets/images/' . $file_name;
+                }
+            }
+            
+            // Insérer le produit dans la base de données
+            $sql = "INSERT INTO products (name, description, price, stock_quantity, category_id, image_url, created_at, updated_at) 
+                   VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$name, $description, $price, $stock, $category_id, $image_url]);
+            
+            $productId = $pdo->lastInsertId();
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Produit ajouté avec succès', 
+                'product_id' => $productId
+            ]);
+        }
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+    }
+}
+
+function editProduct()
+{
+    // Vérifier si l'utilisateur est connecté et admin
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Non autorisé']);
+        exit;
+    }
+    
+    require '../src/config/database.php';
+    
+    try {
+        // Vérifier si l'utilisateur est admin
+        $stmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        
+        if (!$user || $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Accès refusé']);
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Récupérer les données du formulaire
+            $product_id = $_POST['product_id'] ?? null;
+            $name = $_POST['name'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $price = $_POST['price'] ?? 0;
+            $stock = $_POST['stock'] ?? 0;
+            $category_id = $_POST['category_id'] ?? null;
+            
+            if (!$product_id) {
+                echo json_encode(['success' => false, 'message' => 'ID produit manquant']);
+                exit;
+            }
+            
+            // Validation simple
+            if (empty($name) || empty($description) || $price <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Veuillez remplir tous les champs obligatoires']);
+                exit;
+            }
+            
+            // Vérifier si le produit existe
+            $checkStmt = $pdo->prepare('SELECT id FROM products WHERE id = ?');
+            $checkStmt->execute([$product_id]);
+            if (!$checkStmt->fetch()) {
+                echo json_encode(['success' => false, 'message' => 'Produit introuvable']);
+                exit;
+            }
+            
+            // Traitement de l'image si présente
+            $imageUpdateSql = '';
+            $imageParams = [];
+            
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = '../public/assets/images/';
+                
+                // Créer le répertoire s'il n'existe pas
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                // Préserver le nom original avec les accents
+                $original_name = basename($_FILES['image']['name']);
+                // Ajouter un préfixe timestamp pour éviter les conflits
+                $file_name = time() . '_' . $original_name;
+                $target_file = $upload_dir . $file_name;
+                
+                // Déplacer le fichier téléchargé
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                    $image_url = '../public/assets/images/' . $file_name;
+                    $imageUpdateSql = ', image_url = ?';
+                    $imageParams[] = $image_url;
+                }
+            }
+            
+            // Mettre à jour le produit
+            $sql = "UPDATE products SET name = ?, description = ?, price = ?, 
+                   stock_quantity = ?, category_id = ?, updated_at = NOW()" . $imageUpdateSql . " WHERE id = ?";
+            
+            $params = [$name, $description, $price, $stock, $category_id];
+            if (!empty($imageParams)) {
+                $params = array_merge($params, $imageParams);
+            }
+            $params[] = $product_id;
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            
+            echo json_encode(['success' => true, 'message' => 'Produit mis à jour avec succès']);
+        }
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+    }
+}
+
+function deleteProduct()
+{
+    // Vérifier si l'utilisateur est connecté et admin
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Non autorisé']);
+        exit;
+    }
+    
+    require '../src/config/database.php';
+    
+    try {
+        // Vérifier si l'utilisateur est admin
+        $stmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        
+        if (!$user || $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Accès refusé']);
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $product_id = $_POST['product_id'] ?? null;
+            
+            if (!$product_id) {
+                echo json_encode(['success' => false, 'message' => 'ID produit manquant']);
+                exit;
+            }
+            
+            // Supprimer le produit
+            $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
+            $stmt->execute([$product_id]);
+            
+            echo json_encode(['success' => true, 'message' => 'Produit supprimé avec succès']);
+        }
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+    }
+}
+
+function addCategory()
+{
+    // Vérifier si l'utilisateur est connecté et admin
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Non autorisé']);
+        exit;
+    }
+    
+    require '../src/config/database.php';
+    
+    try {
+        // Vérifier si l'utilisateur est admin
+        $stmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        
+        if (!$user || $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Accès refusé']);
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'] ?? '';
+            $description = $_POST['description'] ?? '';
+            
+            if (empty($name)) {
+                echo json_encode(['success' => false, 'message' => 'Le nom de la catégorie est obligatoire']);
+                exit;
+            }
+            
+            // Vérifier si la catégorie existe déjà
+            $checkStmt = $pdo->prepare('SELECT id FROM categories WHERE name = ?');
+            $checkStmt->execute([$name]);
+            if ($checkStmt->fetch()) {
+                echo json_encode(['success' => false, 'message' => 'Cette catégorie existe déjà']);
+                exit;
+            }
+            
+            // Ajouter la catégorie
+            $stmt = $pdo->prepare('INSERT INTO categories (name, description, created_at, updated_at) VALUES (?, ?, NOW(), NOW())');
+            $stmt->execute([$name, $description]);
+            
+            $categoryId = $pdo->lastInsertId();
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Catégorie ajoutée avec succès', 
+                'category_id' => $categoryId
+            ]);
+        }
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+    }
+}
+
 ?> 
