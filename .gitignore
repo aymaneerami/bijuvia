@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+.scannerwork/
+
+# Dossier vendor (souvent utilisé pour les dépendances PHP, par exemple)
+vendor/
+
+# Dossiers et fichiers générés
+/dist
+/build
+/.next
+/.nuxt
+/.webpack
+/.vite
+
+# Fichiers d'environnement
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Système d'exploitation (Mac, Windows, etc.)
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires de l'éditeur
+.vscode/
+.idea/
+*.swp
+
+# Fichiers de cache
+.cache/
+*.tgz
+
+# Fichiers générés par la compilation
+*.out
+*.tgz
+
+# Fichiers de configuration spécifiques à certains outils
+*.eslintcache
