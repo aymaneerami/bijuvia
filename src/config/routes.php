@@ -6,6 +6,7 @@ require_once '../src/controllers/ProductController.php';
 require_once '../src/controllers/CartController.php';
 require_once '../src/controllers/AuthController.php';
 require_once '../src/controllers/OrderController.php'; // Nouveau contrôleur
+require_once '../src/controllers/ProfileController.php'; // Contrôleur de profil
 
 // Fonction pour définir les routes
 function defineRoutes()
@@ -36,6 +37,8 @@ function defineRoutes()
         'login' => 'login',                           // Connexion utilisateur
         'register' => 'register',                     // Inscription utilisateur
         'logout' => 'logout',                         // Déconnexion utilisateur
+        'profile' => 'showProfile',                   // Afficher le profil utilisateur
+        'update-profile' => 'updateProfile',          // Mettre à jour le profil (POST)
         'productAjax' => 'handleProductAjaxRequest'   // Requêtes AJAX pour les produits
     ];
 

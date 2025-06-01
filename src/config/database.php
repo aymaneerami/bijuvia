@@ -6,9 +6,10 @@ $dotenv->load();
 
 // Connexion à la base de données avec PDO
 $host = $_ENV['DB_HOST'];
-$dbname = $_ENV['DB_NAME'];
-$username = $_ENV['DB_USER'];
+$dbname = $_ENV['DB_DATABASE'];
+$username = $_ENV['DB_USERNAME'];
 $password = $_ENV['DB_PASSWORD'];
+
 
 try {
     // Créer une instance PDO pour la connexion à la base de données
