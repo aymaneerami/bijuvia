@@ -12,6 +12,7 @@
                 <a href="?route=products" class="hover:text-yellow-500 transition duration-300 ease-in-out">Produits</a>
                 <a href="?route=home#tendances" class="hover:text-yellow-500 transition duration-300 ease-in-out">Tendances</a>
                 <a href="?route=home#about" class="hover:text-yellow-500 transition duration-300 ease-in-out">À propos</a>
+             
             </div>
 
             <!-- Desktop Actions -->
@@ -31,6 +32,15 @@
                         <?php if (isset($_SESSION['user_id'])): ?>
                             <!-- Si l'utilisateur est connecté, afficher un lien pour se déconnecter -->
                             <a href="?route=profile" class="block px-4 py-2 hover:bg-yellow-100 transition duration-300 ease-in-out"><?php echo htmlspecialchars($_SESSION['name']); ?></a>
+<!-- 
+                            <?php
+                            // Afficher le lien admin dans le dropdown aussi
+                            if (isset($userRole) && $userRole && $userRole['role'] === 'admin') {
+                                echo '<a href="?route=admin" class="block px-4 py-2 hover:bg-red-100 transition duration-300 ease-in-out text-red-600">
+                                        <i class="fas fa-cog mr-1"></i> Administration
+                                      </a>';
+                            }
+                            ?> -->
 
                             <form action="?route=logout" method="POST">
                                 <button type="submit" class="block px-4 py-2 hover:bg-red-100 transition duration-300 ease-in-out">
@@ -61,6 +71,16 @@
             <a href="?route=products" class="block hover:text-yellow-500 transition duration-300 ease-in-out">Produits</a>
             <a href="?route=home#tendances" class="block hover:text-yellow-500 transition duration-300 ease-in-out">Tendances</a>
             <a href="?route=home#about" class="block hover:text-yellow-500 transition duration-300 ease-in-out">À propos</a>
+            
+            <?php
+            // Afficher le lien admin dans le menu mobile aussi
+            if (isset($_SESSION['user_id']) && isset($userRole) && $userRole && $userRole['role'] === 'admin') {
+                echo '<a href="?route=admin" class="block hover:text-yellow-500 transition duration-300 ease-in-out text-red-600 font-semibold">
+                        <i class="fas fa-cog mr-1"></i> Administration
+                      </a>';
+            }
+            ?>
+            
             <hr class="my-2">
             <a href="?route=cart" class="block hover:text-yellow-500 transition duration-300 ease-in-out">
                 <i class="fas fa-shopping-cart"></i> Panier
